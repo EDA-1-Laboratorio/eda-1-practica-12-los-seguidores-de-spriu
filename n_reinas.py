@@ -42,251 +42,122 @@ import time
 # ============================================================
 # PARTE 4A – EL VERIFICADOR (problema de verificación)
 # ============================================================
-#
-# CONTEXTO P vs NP:
-#   Este es el "verificador" del que se habla en el README.
-#   Dada una configuración COMPLETA (tablero de N reinas ya colocadas),
-#   decidir si es válida toma O(N²) — tiempo polinomial.
-#   Esto es lo que hace a N-reinas estar en NP: podemos verificar
-#   rápidamente si una solución candidata es correcta.
-
 def es_valida(tablero: list) -> bool:
     """
     Verifica si un tablero COMPLETO es una solución válida al problema
     de las N reinas.
-
-    Parámetros:
-        tablero – lista de N enteros. tablero[i] = columna de la reina en fila i.
-                  Se asume que el tablero está completamente lleno (N reinas).
-
-    Retorna:
-        True si ningún par de reinas se amenaza entre sí.
-        False en cuanto se detecte algún conflicto.
-
-    CÓMO PENSARLO:
-        Necesitas revisar TODOS los pares de reinas (i, j) con i < j.
-        Para cada par, verifica DOS condiciones:
-            1. Misma columna:  tablero[i] == tablero[j]
-            2. Misma diagonal: abs(tablero[i] - tablero[j]) == abs(i - j)
-
-        Si CUALQUIERA se cumple → las reinas se amenazan → return False.
-        Si NINGÚN par tiene conflicto → return True.
-
-        Estructura con doble bucle anidado:
-            for i in range(n):
-                for j in range(i + 1, n):   ← solo pares distintos, sin repetir
-                    if condición_1 or condición_2:
-                        return False
-            return True
     """
     n = len(tablero)
 
     # PASO 1 – Doble bucle sobre todos los pares (i, j) con i < j.
-
-    # PASO 2 – Verifica las dos condiciones de conflicto.
-    #   Condición columna:  tablero[i] == tablero[j]
-    #   Condición diagonal: abs(tablero[i] - tablero[j]) == abs(i - j)
-    #   Si alguna se cumple, retorna False inmediatamente.
+    for i in range(n):
+        for j in range(i + 1, n):
+            # PASO 2 – Verifica las dos condiciones de conflicto.
+            misma_columna = (tablero[i] == tablero[j])
+            misma_diagonal = (abs(tablero[i] - tablero[j]) == abs(i - j))
+            
+            # Si alguna se cumple, retorna False inmediatamente.
+            if misma_columna or misma_diagonal:
+                return False
 
     # PASO 3 – Si el bucle termina sin conflictos, retorna True.
-
-    pass  # TODO
+    return True
 
 
 # ============================================================
 # PARTE 4B – VERIFICACIÓN INCREMENTAL EFICIENTE
 # ============================================================
-#
-# CONTEXTO:
-#   es_valida revisa TODO el tablero: O(N²).
-#   Dentro del backtracking, colocamos reinas fila por fila de arriba
-#   hacia abajo. Cuando vamos a colocar la reina en la fila 'fila',
-#   las filas 0..(fila-1) ya tienen reinas colocadas.
-#   Las filas fila+1..N-1 aún están vacías.
-#
-#   Solo necesitamos verificar si la nueva reina en (fila, col) conflicta
-#   con las que ya están en las filas anteriores. Eso es O(N), no O(N²).
-#
-#   Esta eficiencia es lo que hace que el backtracking sea práctico.
-
 def es_segura(tablero: list, fila: int, col: int) -> bool:
     """
     Verifica si colocar una reina en (fila, col) es seguro,
     dado que las filas 0..(fila-1) ya tienen reinas colocadas.
-
-    Parámetros:
-        tablero – lista de N enteros. Solo tablero[0..fila-1] son válidos;
-                  tablero[fila..N-1] aún no están asignados (su valor no importa).
-        fila    – índice de la fila donde queremos colocar la nueva reina.
-        col     – columna propuesta para la nueva reina.
-
-    Retorna:
-        True si ninguna reina anterior amenaza a (fila, col).
-
-    CÓMO PENSARLO:
-        Itera i de 0 a fila-1 (las filas ya ocupadas).
-        Para cada reina existente en (i, tablero[i]), verifica:
-            1. Misma columna:  tablero[i] == col
-            2. Misma diagonal: abs(tablero[i] - col) == abs(i - fila)
-
-        Si cualquiera se cumple → return False.
-        Si el bucle termina → return True.
-
-        NOTA: No necesitas verificar la misma fila porque la representación
-        garantiza que solo hay una reina por fila.
     """
     # Itera sobre las filas anteriores (0 a fila-1) y verifica conflictos.
-
-    pass  # TODO
+    for i in range(fila):
+        # Misma columna o misma diagonal
+        if tablero[i] == col or abs(tablero[i] - col) == abs(i - fila):
+            return False
+            
+    return True
 
 
 # ============================================================
 # PARTE 4C – BACKTRACKING: ENCONTRAR UNA SOLUCIÓN
 # ============================================================
-#
-# ESTRUCTURA DEL BACKTRACKING PARA N-REINAS:
-#
-#   El algoritmo coloca una reina por fila, de fila 0 a fila N-1.
-#   En cada fila prueba cada columna de 0 a N-1.
-#   Si la columna es segura (es_segura retorna True), la elige y avanza
-#   recursivamente a la siguiente fila.
-#   Si en alguna fila ninguna columna es segura, retrocede (backtrack).
-#
-#   ÁRBOL DE BÚSQUEDA para N=4:
-#     fila 0: prueba col 0, 1, 2, 3
-#       col 0 → fila 1: prueba col 0 (✗), 1 (✗), 2 (✓)...
-#       col 1 → fila 1: prueba col 0 (✗), 1 (✗), 2 (✗), 3 (✓)...
-#         ...
-#
-#   La PODA ocurre cuando es_segura retorna False: no exploramos esa
-#   rama ni ninguna de sus subramas. Esto reduce enormemente el espacio.
-
-def resolver_n_reinas(n: int, fila: int = 0,
-                      tablero: list = None) -> list | None:
+def resolver_n_reinas(n: int, fila: int = 0, tablero: list = None) -> list | None:
     """
     Encuentra la primera solución al problema de N reinas usando backtracking.
-
-    Parámetros:
-        n      – tamaño del tablero (N×N) y número de reinas.
-        fila   – fila actual que estamos intentando ocupar (empieza en 0).
-        tablero – lista de N enteros que se va llenando. Si es None, se crea.
-
-    Retorna:
-        Lista de N enteros (tablero completo) con la primera solución, o
-        None si no existe ninguna solución.
-
-    CÓMO PENSARLO:
-        CASO BASE (éxito):
-            Si fila == n, todas las reinas están colocadas → retorna tablero.copy()
-            (copiamos para no retornar una referencia que se modifique después)
-
-        CASO RECURSIVO:
-            for col in range(n):
-                if es_segura(tablero, fila, col):
-                    tablero[fila] = col           ← coloca la reina
-                    resultado = resolver_n_reinas(n, fila+1, tablero)
-                    if resultado is not None:
-                        return resultado          ← propagamos la solución
-                    tablero[fila] = -1            ← backtrack: quita la reina
-
-            Si ninguna columna funcionó → return None (esta rama no tiene solución)
-
-        La primera llamada es: resolver_n_reinas(n, 0, [-1]*n)
     """
     # PASO 1 – Inicialización del tablero (solo en la primera llamada).
-    #   if tablero is None: tablero = [-1] * n
+    if tablero is None: 
+        tablero = [-1] * n
 
     # PASO 2 – Caso base de éxito.
-    #   if fila == n: return tablero.copy()
+    if fila == n: 
+        return tablero.copy()
 
     # PASO 3 – Caso recursivo: prueba cada columna de 0 a n-1.
-    #   Para cada col, verifica es_segura → coloca → recursa → backtrack.
+    for col in range(n):
+        if es_segura(tablero, fila, col):
+            tablero[fila] = col  # coloca la reina
+            
+            resultado = resolver_n_reinas(n, fila + 1, tablero)
+            if resultado is not None:
+                return resultado  # propagamos la solución
+                
+            tablero[fila] = -1  # backtrack: quita la reina
 
     # PASO 4 – Si ninguna columna funcionó, retorna None.
-
-    pass  # TODO
+    return None
 
 
 def imprimir_tablero(tablero: list, titulo: str = "Tablero") -> None:
     """
     Imprime el tablero de ajedrez con las posiciones de las reinas.
-
-    Leyenda:
-        Q  → reina
-        .  → celda vacía
-
-    Ejemplo para tablero = [1, 3, 0, 2]:
-        Tablero:
-        . Q . .
-        . . . Q
-        Q . . .
-        . . Q .
-
-    CÓMO PENSARLO:
-        Recorre cada fila i.
-        En cada fila, recorre cada columna j.
-        Si tablero[i] == j → imprime 'Q', de lo contrario '.'
-        Separa las celdas con espacios.
     """
     n = len(tablero)
     print(f"\n{titulo}:")
-    # Para cada fila, construye una cadena con 'Q' en la columna correspondiente.
-    # Usa " ".join(...) para separar con espacios.
-
-    pass  # TODO
+    
+    for i in range(n):
+        fila_str = []
+        for j in range(n):
+            if tablero[i] == j:
+                fila_str.append("Q")
+            else:
+                fila_str.append(".")
+        print(" ".join(fila_str))
 
 
 # ============================================================
 # PARTE 4D – CONTAR TODAS LAS SOLUCIONES
 # ============================================================
-#
-# La estructura es casi idéntica a resolver_n_reinas, pero:
-#   - En lugar de retornar la primera solución, CONTAMOS cada éxito.
-#   - NUNCA retornamos al encontrar una solución; seguimos explorando.
-#   - Siempre hacemos backtrack (tablero[fila] = -1) al terminar cada rama.
-
-def contar_soluciones(n: int, fila: int = 0,
-                      tablero: list = None) -> int:
+def contar_soluciones(n: int, fila: int = 0, tablero: list = None) -> int:
     """
     Cuenta todas las soluciones al problema de N reinas.
-
-    Retorna:
-        Número entero con la cantidad de soluciones distintas.
-
-    CÓMO PENSARLO:
-        CASO BASE:
-            Si fila == n → encontramos una solución completa → return 1
-
-        CASO RECURSIVO:
-            count = 0
-            for col in range(n):
-                if es_segura(tablero, fila, col):
-                    tablero[fila] = col
-                    count += contar_soluciones(n, fila+1, tablero)   ← SUMA (no retorna)
-                    tablero[fila] = -1   ← siempre backtrack
-
-            return count
-
-        Observa la diferencia clave: no retornamos al primer éxito,
-        sino que ACUMULAMOS el conteo de todas las ramas.
     """
     # PASO 1 – Inicialización del tablero.
-    #   if tablero is None: tablero = [-1] * n
+    if tablero is None: 
+        tablero = [-1] * n
 
     # PASO 2 – Caso base.
-    #   if fila == n: return 1
+    if fila == n: 
+        return 1
 
     # PASO 3 – Caso recursivo: itera columnas, acumula count.
+    count = 0
+    for col in range(n):
+        if es_segura(tablero, fila, col):
+            tablero[fila] = col
+            count += contar_soluciones(n, fila + 1, tablero)  # SUMA (no retorna)
+            tablero[fila] = -1  # siempre backtrack
 
     # PASO 4 – return count
-
-    pass  # TODO
+    return count
 
 
 # ============================================================
 # PARTE 4E – ANÁLISIS DE COMPLEJIDAD
 # ============================================================
-
 def medir(funcion, *args, repeticiones: int = 3):
     """Ejecuta funcion(*args) 'repeticiones' veces. Retorna (resultado, t_promedio)."""
     tiempos = []
@@ -302,9 +173,7 @@ def medir(funcion, *args, repeticiones: int = 3):
 # ============================================================
 # EXPERIMENTOS
 # ============================================================
-
 if __name__ == "__main__":
-
     # --- Verificación de es_valida ---
     print("=== Verificación de es_valida ===")
     valida_4    = [1, 3, 0, 2]   # solución conocida para N=4
